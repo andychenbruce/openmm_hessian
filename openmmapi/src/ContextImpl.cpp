@@ -314,6 +314,62 @@ double ContextImpl::calcForcesAndEnergy(bool includeForces, bool includeEnergy, 
     }
 }
 
+std::vector<double> ContextImpl::calcHessian(int groups) {
+    if (!hasSetPositions)
+        throw OpenMMException("Particle positions have not been set");
+
+    int numParticles = system.getNumParticles();
+    int numDOF = 3 * numParticles; // 3N degrees of freedom
+    std::vector<double> hessian(numDOF * numDOF, 0.0);
+
+    // Get current positions
+    std::vector<Vec3> originalPositions;
+    getPositions(originalPositions);
+
+    // Small displacement for finite difference
+    const double h = 1e-7; // in nm
+
+    // Calculate Hessian using finite differences: H_{ij} = (F_j(r + h*e_i) - F_j(r - h*e_i)) / (2*h)
+    // where F_j is the force on degree of freedom j, and e_i is unit vector in direction i
+    std::vector<Vec3> positions = originalPositions;
+    std::vector<Vec3> forcesPlus, forcesMinus;
+
+    for (int i = 0; i < numDOF; i++) {
+        int atomIndex = i / 3;
+        int coordIndex = i % 3; // 0=x, 1=y, 2=z
+
+        // Displace +h in coordinate i
+        positions[atomIndex][coordIndex] = originalPositions[atomIndex][coordIndex] + h;
+        setPositions(positions);
+        calcForcesAndEnergy(true, false, groups); // Calculate forces
+        getForces(forcesPlus);
+
+        // Displace -h in coordinate i
+        positions[atomIndex][coordIndex] = originalPositions[atomIndex][coordIndex] - h;
+        setPositions(positions);
+        calcForcesAndEnergy(true, false, groups); // Calculate forces
+        getForces(forcesMinus);
+
+        // Restore original position for this atom
+        positions[atomIndex][coordIndex] = originalPositions[atomIndex][coordIndex];
+
+        // Calculate Hessian elements: H_{ij} = -dF_j/dR_i (since F = -grad V)
+        for (int j = 0; j < numParticles; j++) {
+            for (int k = 0; k < 3; k++) {
+                int dof_j = 3 * j + k;
+                // H_{ij} = d^2E/dR_i dR_j = -dF_j/dR_i
+                double hessianElement = -(forcesPlus[j][k] - forcesMinus[j][k]) / (2.0 * h);
+                hessian[i * numDOF + dof_j] = hessianElement;
+            }
+        }
+    }
+
+    // Restore original positions
+    setPositions(originalPositions);
+
+    return hessian;
+}
+
 int& ContextImpl::getLastForceGroups() {
     return lastForceGroups;
 }

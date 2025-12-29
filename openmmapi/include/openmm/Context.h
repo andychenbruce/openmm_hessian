@@ -282,6 +282,17 @@ public:
      * belong to exactly one molecule.
      */
     const std::vector<std::vector<int> >& getMolecules() const;
+    /**
+     * Calculate the Hessian matrix of the potential energy with respect to atomic coordinates.
+     * The Hessian is a 3N x 3N matrix where N is the number of particles.
+     * Element (i, j) is the second partial derivative of the potential energy with respect to
+     * coordinates i and j (where i and j index over x,y,z components of all particle positions).
+     *
+     * @param groups a set of bit flags for which force groups to include in the calculation.
+     *               Group i will be included if (groups&(1<<i)) != 0. The default value includes all groups.
+     * @return a vector containing the Hessian matrix in row-major order
+     */
+    std::vector<double> calculateHessian(int groups=0xFFFFFFFF) const;
 private:
     friend class ContextImpl;
     friend class Force;

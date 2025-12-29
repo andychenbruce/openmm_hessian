@@ -207,8 +207,19 @@ public:
      */
     double calcForcesAndEnergy(bool includeForces, bool includeEnergy, int groups=0xFFFFFFFF);
     /**
+     * Calculate the Hessian matrix of the potential energy with respect to atomic coordinates.
+     * The Hessian is a 3N x 3N matrix where N is the number of particles.
+     * Element (i, j) is the second partial derivative of the potential energy with respect to
+     * coordinates i and j (where i and j index over x,y,z components of all particle positions).
+     *
+     * @param groups a set of bit flags for which force groups to include in the calculation.
+     *               Group i will be included if (groups&(1<<i)) != 0. The default value includes all groups.
+     * @return a vector containing the Hessian matrix in row-major order
+     */
+    std::vector<double> calcHessian(int groups=0xFFFFFFFF);
+    /**
      * Get the set of force group flags that were passed to the most recent call to calcForcesAndEnergy().
-     * 
+     *
      * Note that this returns a reference, so it's possible to modify it.  Be very very cautious about
      * doing that!  Only do it if you're also modifying forces stored inside the context.
      */

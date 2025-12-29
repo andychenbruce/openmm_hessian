@@ -98,7 +98,8 @@ class WrapperGenerator:
                             'bool OpenMM::Discrete3DFunction::operator!=',
                             'const std::map<int, int>& OpenMM::DPDIntegrator::getParticleTypes',
                             'const std::map<int, int>& OpenMM::QTBIntegrator::getParticleTypes',
-                            'const std::map<int, double>& OpenMM::QTBIntegrator::getTypeAdaptationRates'
+                            'const std::map<int, double>& OpenMM::QTBIntegrator::getTypeAdaptationRates',
+                            'std::vector<double> OpenMM::Context::calculateHessian'
                            ]
         self.skipMethods = [s.replace(' ', '') for s in self.skipMethods]
         self.hideClasses = ['Kernel', 'KernelImpl', 'KernelFactory', 'ContextImpl', 'SerializationNode', 'SerializationProxy']
@@ -447,7 +448,8 @@ extern OPENMM_EXPORT char* OpenMM_XmlSerializer_serializeState(const OpenMM_Stat
 extern OPENMM_EXPORT char* OpenMM_XmlSerializer_serializeIntegrator(const OpenMM_Integrator* integrator);
 extern OPENMM_EXPORT OpenMM_System* OpenMM_XmlSerializer_deserializeSystem(const char* xml);
 extern OPENMM_EXPORT OpenMM_State* OpenMM_XmlSerializer_deserializeState(const char* xml);
-extern OPENMM_EXPORT OpenMM_Integrator* OpenMM_XmlSerializer_deserializeIntegrator(const char* xml);""", file=self.out)
+extern OPENMM_EXPORT OpenMM_Integrator* OpenMM_XmlSerializer_deserializeIntegrator(const char* xml);
+extern OPENMM_EXPORT OpenMM_DoubleArray* OpenMM_Context_calculateHessian(const OpenMM_Context* target, int groups);""", file=self.out)
 
         self.writeClasses()
 
@@ -917,6 +919,10 @@ OPENMM_EXPORT OpenMM_Integrator* OpenMM_XmlSerializer_deserializeIntegrator(cons
     string input(xml);
     stringstream stream(input);
     return reinterpret_cast<OpenMM_Integrator*>(OpenMM::XmlSerializer::deserialize<OpenMM::Integrator>(stream));
+}
+OPENMM_EXPORT OpenMM_DoubleArray* OpenMM_Context_calculateHessian(const OpenMM_Context* target, int groups) {
+    vector<double> result = reinterpret_cast<const Context*>(target)->calculateHessian(groups);
+    return reinterpret_cast<OpenMM_DoubleArray*>(new vector<double>(result));
 }""", file=self.out)
         self.writeClasses()
         print("}\n", file=self.out)
@@ -2152,6 +2158,12 @@ OPENMM_EXPORT void openmm_xmlserializer_deserializeintegrator_(const char* xml, 
 }
 OPENMM_EXPORT void OPENMM_XMLSERIALIZER_DESERIALIZEINTEGRATOR(const char* xml, OpenMM_Integrator*& result, int length) {
     result = OpenMM_XmlSerializer_deserializeIntegrator(makeString(xml, length).c_str());
+}
+OPENMM_EXPORT void openmm_context_calculatehessian_(const OpenMM_Context*& target, const int& groups, OpenMM_DoubleArray*& result) {
+    result = OpenMM_Context_calculateHessian(target, groups);
+}
+OPENMM_EXPORT void OPENMM_CONTEXT_CALCULATEHESSIAN(const OpenMM_Context*& target, const int& groups, OpenMM_DoubleArray*& result) {
+    result = OpenMM_Context_calculateHessian(target, groups);
 }""", file=self.out)
 
         self.writeClasses()

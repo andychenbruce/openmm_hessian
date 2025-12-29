@@ -280,3 +280,7 @@ const ContextImpl& Context::getImpl() const {
 const vector<vector<int> >& Context::getMolecules() const {
     return impl->getMolecules();
 }
+
+vector<double> Context::calculateHessian(int groups) const {
+    return impl->calcHessian(groups);
+}
